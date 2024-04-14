@@ -1,13 +1,16 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QTextEdit, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QTreeWidget, QTreeWidgetItem, QCheckBox, QMessageBox
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QLineEdit, QTextEdit, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QTreeWidget, QTreeWidgetItem, QCheckBox, QMessageBox, QCalendarWidget
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt, QDate  
 import sqlite3
 
 class ReminderApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Reminder App")
-        self.setGeometry(100, 100, 600, 400)
+        self.setGeometry(100, 100, 800, 600)
+        self.setWindowIcon(QIcon(r"C:\Coding\Python\Projects\Notifier\pngs\logo.png"))
+
         
         # Connect to the database
         self.conn = sqlite3.connect('reminders.db')
@@ -44,9 +47,10 @@ class ReminderApp(QMainWindow):
         self.title_entry = QLineEdit()
         reminder_layout.addWidget(self.title_entry)
         
-        reminder_layout.addWidget(QLabel("Date (YYYY-MM-DD):"))
-        self.date_entry = QLineEdit()
-        reminder_layout.addWidget(self.date_entry)
+        reminder_layout.addWidget(QLabel("Date:"))
+        self.date_button = QPushButton("Choose Date")
+        self.date_button.clicked.connect(self.show_calendar)
+        reminder_layout.addWidget(self.date_button)
         
         reminder_layout.addWidget(QLabel("Time (HH:MM):"))
         self.time_entry = QLineEdit()
@@ -72,10 +76,22 @@ class ReminderApp(QMainWindow):
         # Load existing reminders
         self.load_reminders()
         
+    def show_calendar(self):
+        # Create a calendar widget
+        self.calendar = QCalendarWidget()
+        self.calendar.setWindowModality(Qt.ApplicationModal)
+        self.calendar.clicked.connect(self.set_date)
+        self.calendar.show()
+        
+    def set_date(self, date):
+        # Set the selected date to the date entry
+        self.date_button.setText(date.toString(Qt.ISODate))
+        self.calendar.deleteLater()
+        
     def add_reminder(self):
         # Get input values
         title = self.title_entry.text()
-        date = self.date_entry.text()
+        date = self.date_button.text()  # Retrieve selected date from the button text
         time = self.time_entry.text()
         notes = self.notes_entry.toPlainText()
         recurring = "Yes" if self.recurring_checkbox.isChecked() else "No"
@@ -93,7 +109,6 @@ class ReminderApp(QMainWindow):
         
         # Clear input fields
         self.title_entry.clear()
-        self.date_entry.clear()
         self.time_entry.clear()
         self.notes_entry.clear()
         self.recurring_checkbox.setChecked(False)
