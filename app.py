@@ -9,7 +9,7 @@ class ReminderApp(QMainWindow):
         super().__init__()
         self.setWindowTitle("Reminder App")
         self.setGeometry(100, 100, 800, 600)
-        self.setWindowIcon(QIcon(r"C:\Coding\Python\Projects\Notifier\pngs\logo.png"))
+        self.setWindowIcon(QIcon(r"pngs\logo.png"))
 
         
         # Connect to the database
