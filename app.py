@@ -66,9 +66,9 @@ class AddReminderWindow(QDialog):
         self.accept()
 
 class ViewNoteDialog(QDialog):
-    def __init__(self, note):
+    def __init__(self, title, note):
         super().__init__()
-        self.setWindowTitle("View Note")
+        self.setWindowTitle(title)  # Set the window title to the note title
         self.setFixedSize(400, 300)
 
         layout = QVBoxLayout()
@@ -134,7 +134,7 @@ class ReminderApp(QMainWindow):
         reminder_layout = QVBoxLayout()
         layout.addLayout(reminder_layout)
 
-        # "Add Reminder" button to open the new window
+        # Define the "Add Reminder" button to open the new window
         add_button = QPushButton("Add Reminder")
         add_button.clicked.connect(self.open_add_reminder_window)
         reminder_layout.addWidget(add_button)
@@ -147,6 +147,9 @@ class ReminderApp(QMainWindow):
         self.reminder_tree.customContextMenuRequested.connect(self.show_context_menu)
         layout.addWidget(self.reminder_tree)
 
+        # Connect double click event to view note
+        self.reminder_tree.itemDoubleClicked.connect(self.view_selected_note)
+        
         # Load existing reminders
         self.load_reminders()
 
@@ -217,6 +220,14 @@ class ReminderApp(QMainWindow):
             item = QTreeWidgetItem([str(reminder[0]), reminder[1], reminder[2], reminder[3], ""])
             item.setData(4, Qt.UserRole, reminder[4])  # Store notes in UserRole for future use
             self.reminder_tree.addTopLevelItem(item)
+            
+    def view_selected_note(self, item, column):
+        # Get the note title and text from the selected item
+        title = item.text(1)  # Assuming the title is in the second column
+        note = item.data(4, Qt.UserRole)
+        # Open the view dialog with the selected note and title
+        view_dialog = ViewNoteDialog(title, note)
+        view_dialog.exec_()
 
     def show_context_menu(self, position):
         menu = QMenu(self)
