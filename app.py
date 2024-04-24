@@ -7,11 +7,10 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, QDate, QDateTime
 import sqlite3
 
-# A new window class for adding reminders
-class AddReminderWindow(QDialog):
+class AddNoteWindow(QDialog):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Add Reminder")
+        self.setWindowTitle("Add note")
         self.setFixedSize(600, 400)
 
         layout = QVBoxLayout()
@@ -26,11 +25,11 @@ class AddReminderWindow(QDialog):
         layout.addWidget(self.notes_entry)
 
         add_button = QPushButton("Save")
-        add_button.clicked.connect(self.add_reminder)
+        add_button.clicked.connect(self.add_note)
         layout.addWidget(add_button)
 
-        
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)# wrotea his to remove the question mark button from the title bar
+        # to remove the question mark button from the title bar
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
         # Apply dark theme
         self.setStyleSheet("""
@@ -57,7 +56,7 @@ class AddReminderWindow(QDialog):
         """)
 
         
-    def add_reminder(self):
+    def add_note(self):
         # Get input values
         title = self.title_entry.text()
         notes = self.notes_entry.toPlainText()
@@ -70,7 +69,8 @@ class ViewNoteDialog(QDialog):
         super().__init__()
         self.setWindowTitle(title)  # Set the window title to the note title
         self.setFixedSize(400, 300)
-
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        
         layout = QVBoxLayout()
         self.setLayout(layout)
 
@@ -96,24 +96,24 @@ class ViewNoteDialog(QDialog):
             }
         """)
 
-class ReminderApp(QMainWindow):
+class NoteApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Reminder App")
+        self.setWindowTitle("Note App")
         self.setGeometry(100, 100, 800, 600)
         self.setWindowIcon(QIcon(r"pngs\logo.png"))
-
+        
         # Connect to the database
-        self.conn = sqlite3.connect('reminders.db')
+        self.conn = sqlite3.connect('notes.db')
         self.create_table()
 
         # UI elements
         self.create_widgets()
 
     def create_table(self):
-        # A table to store reminders
+        # A table to store notes
         cursor = self.conn.cursor()
-        cursor.execute('''CREATE TABLE IF NOT EXISTS reminders (
+        cursor.execute('''CREATE TABLE IF NOT EXISTS notes (
                             id INTEGER PRIMARY KEY,
                             title TEXT NOT NULL,
                             date TEXT NOT NULL,
@@ -130,29 +130,29 @@ class ReminderApp(QMainWindow):
         central_widget.setLayout(layout)
 
         
-        # Reminder creation section
-        reminder_layout = QVBoxLayout()
-        layout.addLayout(reminder_layout)
+        # Note creation section
+        note_layout = QVBoxLayout()
+        layout.addLayout(note_layout)
 
-        # Define the "Add Reminder" button to open the new window
-        add_button = QPushButton("Add Reminder")
-        add_button.clicked.connect(self.open_add_reminder_window)
-        reminder_layout.addWidget(add_button)
+        # Define the "Add note" button to open the new window
+        add_button = QPushButton("Add note")
+        add_button.clicked.connect(self.open_add_note_window)
+        note_layout.addWidget(add_button)
 
-        # Reminder display section
-        self.reminder_tree = QTreeWidget()
-        self.reminder_tree.setColumnCount(4)  # Set the number of columns
-        self.reminder_tree.setHeaderLabels(["ID", "Title", "Date", "Time"])  # Add headers
-        self.reminder_tree.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.reminder_tree.customContextMenuRequested.connect(self.show_context_menu)
-        layout.addWidget(self.reminder_tree)
+        # Note display section
+        self.note_tree = QTreeWidget()
+        self.note_tree.setColumnCount(4)  # Set the number of columns
+        self.note_tree.setHeaderLabels(["ID", "Title", "Date", "Time"])  # Add headers
+        self.note_tree.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.note_tree.customContextMenuRequested.connect(self.show_context_menu)
+        layout.addWidget(self.note_tree)
 
         # Connect double click event to view note
-        self.reminder_tree.itemDoubleClicked.connect(self.view_selected_note)
+        self.note_tree.itemDoubleClicked.connect(self.view_selected_note)
         
-        # Load existing reminders
-        self.load_reminders()
-
+        # Load existing notes
+        self.load_notes()
+        
         # Apply dark theme
         self.setStyleSheet("""
             QMainWindow {
@@ -178,14 +178,14 @@ class ReminderApp(QMainWindow):
             }
         """)
 
-    def open_add_reminder_window(self):
-        # Create and open the new window for adding reminders
-        add_window = AddReminderWindow()
+    def open_add_note_window(self):
+        # Create and open the new window for adding notes
+        add_window = AddNoteWindow()
         if add_window.exec_() == QDialog.Accepted:
-            # If the user clicks "Add" in the new window, add the reminder
-            self.add_reminder(add_window.title_entry.text(), add_window.notes_entry.toPlainText())
+            # If the user clicks "Add" in the new window, add the note
+            self.add_note(add_window.title_entry.text(), add_window.notes_entry.toPlainText())
 
-    def add_reminder(self, title, notes):
+    def add_note(self, title, notes):
         # Automatically set the current date
         date = QDate.currentDate().toString(Qt.ISODate)
         # Get the current time in PC's timezone
@@ -197,29 +197,29 @@ class ReminderApp(QMainWindow):
             QMessageBox.warning(self, "Error", "Please enter title.")
             return
 
-        # Insert reminder into database with date and time
+        # Insert note into database with date and time
         cursor = self.conn.cursor()
-        cursor.execute("INSERT INTO reminders (title, date, time, notes) VALUES (?, ?, ?, ?)",
+        cursor.execute("INSERT INTO notes (title, date, time, notes) VALUES (?, ?, ?, ?)",
                        (title, date, time, notes))
         self.conn.commit()
 
-        # Reload reminders
-        self.load_reminders()
+        # Reload notes
+        self.load_notes()
 
-    def load_reminders(self):
+    def load_notes(self):
         # Clear existing data
-        self.reminder_tree.clear()
+        self.note_tree.clear()
 
-        # Fetch reminders from database
+        # Fetch notes from database
         cursor = self.conn.cursor()
-        cursor.execute("SELECT * FROM reminders")
-        reminders = cursor.fetchall()
+        cursor.execute("SELECT * FROM notes")
+        notes = cursor.fetchall()
 
-        # Display reminders in TreeWidget
-        for reminder in reminders:
-            item = QTreeWidgetItem([str(reminder[0]), reminder[1], reminder[2], reminder[3], ""])
-            item.setData(4, Qt.UserRole, reminder[4])  # Store notes in UserRole for future use
-            self.reminder_tree.addTopLevelItem(item)
+        # Display notes in TreeWidget
+        for note in notes:
+            item = QTreeWidgetItem([str(note[0]), note[1], note[2], note[3], ""])
+            item.setData(4, Qt.UserRole, note[4])  # Store notes in UserRole for future use
+            self.note_tree.addTopLevelItem(item)
             
     def view_selected_note(self, item, column):
         # Get the note title and text from the selected item
@@ -235,35 +235,36 @@ class ReminderApp(QMainWindow):
         delete_action = QAction("Delete", self)
         menu.addAction(edit_action)
         menu.addAction(delete_action)
-        action = menu.exec_(self.reminder_tree.mapToGlobal(position))
+        action = menu.exec_(self.note_tree.mapToGlobal(position))
         if action == edit_action:
             self.edit_selected_note()
         elif action == delete_action:
             self.delete_selected_note()
 
     def edit_selected_note(self):
-        selected_item = self.reminder_tree.currentItem()
+        
+        selected_item = self.note_tree.currentItem()
         if selected_item:
             note = selected_item.data(4, Qt.UserRole)
             new_note, ok = QInputDialog.getText(self, "Edit Note", "Edit your note:", QLineEdit.Normal, note)
             if ok:
                 selected_item.setData(4, Qt.UserRole, new_note)
                 selected_item.setText(4, new_note)
-
+                
     def delete_selected_note(self):
-        selected_item = self.reminder_tree.currentItem()
+        selected_item = self.note_tree.currentItem()
         if selected_item:
             confirmation = QMessageBox.question(self, "Delete Note", "Are you sure you want to delete this note?",
                                                 QMessageBox.Yes | QMessageBox.No)
             if confirmation == QMessageBox.Yes:
                 note_id = selected_item.text(0)
                 cursor = self.conn.cursor()
-                cursor.execute("DELETE FROM reminders WHERE id = ?", (note_id,))
+                cursor.execute("DELETE FROM notes WHERE id = ?", (note_id,))
                 self.conn.commit()
-                self.reminder_tree.takeTopLevelItem(self.reminder_tree.indexOfTopLevelItem(selected_item))
+                self.note_tree.takeTopLevelItem(self.note_tree.indexOfTopLevelItem(selected_item))
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = ReminderApp()
+    window = NoteApp()
     window.show()
     sys.exit(app.exec_())
